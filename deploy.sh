@@ -1,5 +1,13 @@
 #!/bin/bash
-echo "Running Database Migrations..."
+rm -rf migrations
+
+# 2. Initialize migrations again
+flask db init
+
+# 3. Create fresh migration (auto-detect models)
+flask db migrate -m "initial"
+
+# 4. Apply to DB
 flask db upgrade
 
 echo "Starting Flask server..."
