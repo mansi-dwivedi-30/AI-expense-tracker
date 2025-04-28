@@ -49,12 +49,11 @@ def login():
     return render_template('login.html')
 
 
-@auth_bp.route('/logout')
-@login_required
+@auth_bp.route('/logout', methods=['POST'])
+@login_required  # Ensure that only authenticated users can access this
 def logout():
     logout_user()
-    flash("Logged out!", "info")
-    return redirect(url_for('auth.login'))
+    return redirect(url_for('auth.login'))  
 
 main_bp = Blueprint('main', __name__)
 

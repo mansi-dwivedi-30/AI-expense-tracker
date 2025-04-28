@@ -1,116 +1,144 @@
 {% extends "base.html" %}
+{% block title %}Dashboard - Expense Tracker{% endblock %}
+
 {% block content %}
-<div class="container">
-  <h2>Gemini Insights</h2>
-  <div class="card">
-    <p>{{ insights }}</p>
+
+<!-- Gemini Insights Card -->
+<div class="card bg-light mb-4 shadow-sm rounded">
+  <div class="card-header bg-gradient bg-primary text-white d-flex align-items-center">
+    <h4 class="mb-0">💡 Smart Gemini Insights</h4>
+  </div>
+  <div class="card-body">
+    {% if insights %}
+      <div class="markdown-content">
+        {{ insights | safe }}
+      </div>
+    {% else %}
+      <p>No insights available yet. Add some expenses to get smart recommendations!</p>
+    {% endif %}
+  </div>
 </div>
 
+<!-- Expense Roast Summary -->
+<div class="card bg-warning bg-opacity-25 p-4 mb-5 shadow-sm rounded">
+  <h3 class="mb-3">💸 Expense Roast Summary 💀</h3>
+  <ul class="list-unstyled">
+    <li>You've spent <strong>₹{{ total_expenses }}</strong> this month. Impressive... or not. 😬</li>
+    <li>Highest single expense: <strong>₹{{ max_expense }}</strong> — therapy or shopping spree? 🛍️</li>
+    <li>Savings: <strong>₹{{ total_income - total_expenses }}</strong> — better than nothing! 🤑</li>
+  </ul>
+</div>
 
-  <div class="card bg-light p-4 rounded shadow mb-4">
-    <h3 class="mb-2">💸 Expense Roast Summary 💀</h3>
-    <p>You've spent <strong>₹{{ total_expenses }}</strong> this month... again. Nice 💁‍♂️</p>
-    <p>Highest single expense: <strong>₹{{ max_expense }}</strong> — were you hungry or heartbroken? 🥲</p>
-    <p>Savings? What's that? You saved <strong>₹{{ total_income - total_expenses }}</strong>... if you can call that saving 🤡</p>
+<!-- Add Expense Button -->
+<div class="text-end mb-4">
+  <a href="{{ url_for('expenses.add_expense') }}" class="btn btn-success btn-lg shadow">
+    + Add New Expense
+  </a>
+</div>
+
+<!-- Total Spent Summary -->
+<div class="alert alert-info text-center fs-5 shadow-sm">
+  💰 Total Spent: ₹{{ total_amount }}
+</div>
+
+<!-- All Expenses Table -->
+<div class="card p-4 mb-5 shadow rounded">
+  <h4 class="mb-4">🧾 All Expenses</h4>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th>Date</th>
+          <th>Description</th>
+          <th>Category</th>
+          <th>Amount (₹)</th>
+          <th>Reaction</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for exp in expenses %}
+        <tr>
+          <td>{{ exp.date.strftime('%Y-%m-%d') }}</td>
+          <td>{{ exp.title }}</td>
+          <td>{{ exp.category }}</td>
+          <td>{{ exp.amount }}</td>
+          <td>
+            {{ exp.reaction or '😐' }}
+            <form action="{{ url_for('expenses.react_to_expense', expense_id=exp.id) }}" method="POST" class="d-inline">
+              <select name="emoji" onchange="this.form.submit()" class="form-select form-select-sm">
+                <option value="">💬</option>
+                <option value="👍">👍</option>
+                <option value="❤️">❤️</option>
+                <option value="😂">😂</option>
+                <option value="😮">😮</option>
+                <option value="💸">💸</option>
+              </select>
+            </form>
+          </td>
+          <td>
+            <div class="d-flex gap-2">
+              <a href="{{ url_for('expenses.edit_expense', expense_id=exp.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+              <form action="{{ url_for('expenses.delete_expense', expense_id=exp.id) }}" method="POST" onsubmit="return confirm('Are you sure?');" class="d-inline">
+                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
-   
+</div>
 
-  <div class="mb-3 text-end">
-    <a href="{{ url_for('expenses.add_expense') }}" class="btn btn-primary">
-      + Add Expense
-    </a>
+<!-- Update Monthly Income -->
+<div class="card p-4 mb-5 shadow rounded">
+  <h4 class="mb-4">💼 Update Monthly Income</h4>
+  <form method="POST" action="/update_income" class="row g-3">
+    <div class="col-md-8">
+      <input type="number" step="0.01" name="income" class="form-control" placeholder="Enter your income" required>
+    </div>
+    <div class="col-md-4 d-grid">
+      <button type="submit" class="btn btn-primary">Save Income</button>
+    </div>
+  </form>
+
+  {% if income %}
+  <div class="mt-4">
+    <p><strong>Total Income:</strong> ₹{{ income }}</p>
+    <p><strong>Total Savings:</strong> ₹{{ savings }}</p>
+    <p><strong>Savings Rate:</strong> {{ (savings / income * 100) | round(2) }}%</p>
   </div>
+  {% endif %}
+</div>
 
-  <div class="alert alert-info">
-    Total Spent: ₹{{ total_amount }}
-  </div>
-
-  <h4>Expenses</h4>
-  <table class="table table-striped">
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Description</th>
-        <th>Category</th>
-        <th>Amount (₹)</th>
-        <th>Actions</th> 
-        <th>Reaction</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for exp in expenses %}
-<tr>
-  <td>{{ exp.date.strftime('%Y-%m-%d') }}</td>
-  <td>{{ exp.title }}</td>
-  <td>{{ exp.category }}</td>
-  <td>{{ exp.amount }}</td>
-  <td>
-    <form action="{{ url_for('expenses.delete_expense', expense_id=exp.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this expense?');">
-      <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-    </form>
-  </td>
-  <td>
-    <a href="{{ url_for('expenses.edit_expense', expense_id=exp.id) }}" class="btn btn-sm btn-primary">Edit</a>
-    <form action="{{ url_for('expenses.delete_expense', expense_id=exp.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this expense?');">
-      <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-    </form>
-  </td>
-  <td>
-    {{ exp.reaction or '😐' }}
-    <form action="{{ url_for('expenses.react_to_expense', expense_id=exp.id) }}" method="POST" style="display:inline;">
-      <select name="emoji" onchange="this.form.submit()" class="form-select form-select-sm">
-        <option value="">💬</option>
-        <option value="👍">👍</option>
-        <option value="❤️">❤️</option>
-        <option value="😂">😂</option>
-        <option value="😮">😮</option>
-        <option value="💸">💸</option>
-      </select>
-    </form>
-    <form method="POST" action="/update_income">
-      <label for="income">Total Monthly Income:</label>
-      <input type="number" step="0.01" name="income" required>
-      <button type="submit">Save</button>
-    </form>
-    {% if income %}
-  <p>Total Income: ₹{{ income }}</p>
-  <p>Total Savings: ₹{{ savings }}</p>
-  <p>Savings Rate: {{ (savings / income * 100) | round(2) }}%</p>
-{% endif %}
-
-       
-  </td>
-  
-  
-</tr>
-{% endfor %}
-
-    </tbody>
-  </table>
-
-  <h4>Category-wise Summary</h4>
+<!-- Category-wise Expense Chart -->
+<div class="card p-4 shadow rounded">
+  <h4 class="mb-4">📊 Category-wise Expense Summary</h4>
   <canvas id="categoryChart" width="400" height="200"></canvas>
 </div>
 
+<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-  const ctx = document.getElementById('categoryChart').getContext('2d');
-  const chart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: {{ category_summary | map(attribute=0) | list | tojson }},
-      datasets: [{
-        label: '₹ Spent',
-        data: {{ category_summary | map(attribute=1) | list | tojson }},
-        backgroundColor: 'rgba(75, 192, 192, 0.6)'
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false }
-      }
+const ctx = document.getElementById('categoryChart').getContext('2d');
+const chart = new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: {{ category_summary | map(attribute=0) | list | tojson }},
+    datasets: [{
+      label: '₹ Spent',
+      data: {{ category_summary | map(attribute=1) | list | tojson }},
+      backgroundColor: 'rgba(54, 162, 235, 0.6)'
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false }
     }
-  });
+  }
+});
 </script>
+
 {% endblock %}
